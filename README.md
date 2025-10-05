@@ -13,18 +13,20 @@ Este cliente funciona en conjunto con el [servidor de datos de deforestación](h
 - **Interfaz Gráfica Intuitiva**: GUI desarrollada con Tkinter para facilitar la interacción del usuario
 - **Soporte Múltiples Formatos**: Compatible con archivos Excel (`.xlsx`, `.xls`) y archivos de texto plano (`.csv`, `.txt`)
 - **Comunicación por Sockets**: Utiliza sockets TCP para enviar datos al servidor de forma confiable
-- **Configuración Flexible**: Permite configurar la IP y puerto del servidor de destino
+- **Configuración Persistente**: Sistema de configuración con archivo config.ini para guardar IP y puerto del servidor
+- **Menú de Configuración**: Acceso a configuración del servidor desde la barra de menú
 - **Procesamiento de Datos**: Utiliza pandas para leer y procesar los archivos antes del envío
+- **Información del Proyecto**: Ventana "Acerca de" con detalles del proyecto y enlaces al servidor
 - **Manejo de Errores**: Incluye validación de archivos y manejo de errores de conexión
 
 ## Funcionalidad
 
 ### Flujo de Trabajo del Cliente
 
-1. **Configuración del Servidor**: El usuario especifica la IP y puerto del servidor (valores por defecto: `127.0.0.1:9999`)
+1. **Configuración del Servidor**: El usuario puede configurar la IP y puerto del servidor desde el menú "Configuración > Servidor..." (valores por defecto: `127.0.0.1:65432`)
 2. **Selección de Archivo**: Se selecciona un archivo compatible desde el sistema de archivos
 3. **Procesamiento**: El archivo se lee y convierte a formato JSON usando pandas
-4. **Envío de Datos**: Los datos se envían al servidor mediante una conexión socket TCP
+4. **Envío de Datos**: Los datos se envían al servidor mediante una conexión socket TCP usando la configuración guardada
 5. **Confirmación**: Se muestra un mensaje de éxito o error según el resultado de la operación
 
 ### Formatos de Datos Soportados
@@ -47,6 +49,8 @@ Los datos deben contener información de deforestación con las siguientes colum
   - `tkinter` (incluida con Python)
   - `pandas`
   - `socket` (incluida con Python)
+  - `configparser` (incluida con Python)
+  - `webbrowser` (incluida con Python)
 
 ### Instalación de Dependencias
 
@@ -71,9 +75,11 @@ python cliente.py
 
 1. **Iniciar la Aplicación**: Ejecuta `cliente.py` para abrir la interfaz gráfica
 
-2. **Configurar Servidor**: 
+2. **Configurar Servidor** (si es necesario): 
+   - Ve al menú "Configuración > Servidor..."
    - Ingresa la IP del servidor (por defecto: `127.0.0.1`)
    - Especifica el puerto (por defecto: `65432`)
+   - Haz clic en "Guardar" para persistir la configuración
 
 3. **Seleccionar Archivo**:
    - Haz clic en "Cargar Archivo..."
@@ -82,6 +88,9 @@ python cliente.py
 4. **Enviar Datos**:
    - Haz clic en "Enviar Datos al Servidor"
    - Espera la confirmación de envío exitoso
+
+5. **Información del Proyecto**:
+   - Ve al menú "Ayuda > Acerca de..." para ver detalles del proyecto y equipo de desarrollo
 
 ## Protocolo de Comunicación
 
@@ -133,8 +142,27 @@ El cliente incluye manejo para los siguientes tipos de errores:
 ## Estructura del Código
 
 - `ClienteGUI`: Clase principal que maneja la interfaz gráfica y la lógica del cliente
+- `cargar_configuracion()`: Carga la configuración desde config.ini
+- `guardar_configuracion()`: Guarda la configuración en config.ini
+- `mostrar_configuracion_servidor()`: Ventana modal para configurar servidor
+- `mostrar_acerca_de()`: Ventana de información del proyecto
 - `seleccionar_archivo()`: Método para seleccionar archivos del sistema
 - `enviar_datos()`: Método principal que procesa y envía los datos al servidor
+
+## Configuración Persistente
+
+La aplicación utiliza un archivo `config.ini` para guardar la configuración del servidor:
+
+```ini
+[SERVIDOR]
+ip = 127.0.0.1
+puerto = 65432
+```
+
+- **Ubicación**: El archivo se crea automáticamente en el directorio de la aplicación
+- **Persistencia**: La configuración se mantiene entre sesiones
+- **Validación**: Se valida que el puerto esté en el rango 1-65535
+- **Valores por defecto**: IP `127.0.0.1` y Puerto `65432`
 
 ## Notas Técnicas
 
@@ -152,6 +180,15 @@ Este es un proyecto académico que demuestra:
 - Arquitectura cliente-servidor
 - Manejo de archivos y formatos de datos
 - Comunicación en red y protocolos de aplicación
+- Persistencia de configuración con archivos INI
+- Validación de entrada de datos
+
+### Equipo de Desarrollo
+
+- Joaquín Calvillán
+- Luciano Flores
+- Matías Polanco
+- Maximiliano Prieto
 
 ---
 
