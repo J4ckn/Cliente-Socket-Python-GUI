@@ -217,7 +217,7 @@ class VentanaAcercaDe(VentanaBase):
         Args:
             parent (tk.Tk): Ventana padre de la aplicación
         """
-        super().__init__(parent, "Acerca de", "500x600")
+        super().__init__(parent, "Acerca de", "500x620")
     
     def _crear_contenido(self) -> None:
         """
