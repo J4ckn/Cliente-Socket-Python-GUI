@@ -55,7 +55,7 @@ Cliente-Socket-Python-GUI/
 ├── Dataset_Deforestacion.csv  # 📊 Archivo de datos de ejemplo
 ├── README.md                  # 📖 Documentación del proyecto
 ├── test_modules.py            # 🧪 Script de prueba de módulos
-└── src/                       # 📁 Código fuente modularizado
+└── src/                       # 📁 Código fuente
     ├── __init__.py
     ├── core/                  # 🔧 Componentes fundamentales
     │   ├── __init__.py
@@ -143,14 +143,9 @@ cd Cliente-Socket-Python-GUI
 pip install pandas
 ```
 
-3. Ejecuta la aplicación modularizada:
+3. Ejecuta la aplicación:
 ```bash
 python main.py
-```
-
-**Alternativa**: También puedes ejecutar el archivo original monolítico:
-```bash
-python cliente.py
 ```
 
 4. (Opcional) Prueba todos los módulos:
@@ -160,7 +155,7 @@ python test_modules.py
 
 ## Uso del Cliente
 
-1. **Iniciar la Aplicación**: Ejecuta `python main.py` para abrir la interfaz gráfica modularizada
+1. **Iniciar la Aplicación**: Ejecuta `python main.py` para abrir la interfaz gráfica
 
 2. **Configurar Servidor** (si es necesario): 
    - Ve al menú "Configuración > Servidor..."
