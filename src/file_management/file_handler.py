@@ -172,30 +172,35 @@ class ManejadorArchivos:
         """
         Convierte los datos cargados a formato JSON.
         
-        Transforma el DataFrame de pandas en una cadena JSON
-        con formato de registros (lista de objetos JSON).
-        Usa 'ensure_ascii=False' para mantener caracteres Unicode.
+        Transforma el DataFrame interno a una cadena JSON con formato
+        'records' que es ideal para transmisión por red. Mantiene la
+        codificación UTF-8 para caracteres especiales.
         
         Returns:
-            str: Datos en formato JSON como cadena de texto
+            str: Datos en formato JSON como string
             
         Raises:
-            ArchivoError: Si no hay datos cargados o hay error en la conversión
+            ArchivoError: Si no hay datos cargados o hay error en conversión
             
-        Example:
-            if manejador.tiene_datos:
-                json_data = manejador.obtener_datos_json()
-                print(f"JSON generado: {len(json_data)} caracteres")
-                
         Note:
             El formato 'records' genera: [{"col1": val1, "col2": val2}, ...]
             que es ideal para transmisión a través de la red.
+        
+        Example:
+            handler = ManejadorArchivos()
+            handler.cargar_archivo("datos.csv")
+            json_data = handler.obtener_datos_json()
+            # json_data contiene: '[{"pais": "Brasil", "año": 2021}, ...]'
+            
+        Technical Details:
+            Usa 'force_ascii=False' para mantener caracteres Unicode.
+            Formato 'records' es más eficiente para arrays de objetos.
         """
         if not self.tiene_datos:
             raise ArchivoError("No hay datos cargados")
         
         try:
-            return self._datos.to_json(orient='records', ensure_ascii=False)
+            return self._datos.to_json(orient='records', force_ascii=False)
         except Exception as e:
             raise ArchivoError(f"Error al convertir datos a JSON: {e}")
     

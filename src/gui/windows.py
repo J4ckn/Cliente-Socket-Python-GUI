@@ -44,7 +44,7 @@ class VentanaBase(ABC):
         ventana.mostrar()
     """
     
-    def __init__(self, parent: tk.Tk, titulo: str, tamaño: str = "400x300"):
+    def __init__(self, parent: tk.Tk, titulo: str, tamaño: str = "400x400"):
         """
         Inicializa una nueva ventana secundaria.
         

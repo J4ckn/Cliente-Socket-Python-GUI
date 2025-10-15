@@ -85,7 +85,7 @@ class ClienteGUI:
         de la ventana principal de la aplicación.
         """
         self.master.title("Cliente de Envío de Datos")
-        self.master.geometry("450x250")
+        self.master.geometry("450x400")
         self.master.resizable(True, False)
     
     def _crear_menu(self) -> None:
@@ -217,7 +217,7 @@ class ClienteGUI:
             command=self._enviar_datos,
             state=tk.DISABLED
         )
-        self.send_button.pack(fill='x', ipady=10)
+        self.send_button.pack(fill='x', ipady=10, pady=(10, 0))
     
     def _seleccionar_archivo(self) -> None:
         """
