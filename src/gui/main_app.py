@@ -85,7 +85,7 @@ class ClienteGUI:
         de la ventana principal de la aplicación.
         """
         self.master.title("Cliente de Envío de Datos")
-        self.master.geometry("450x400")
+        self.master.geometry("450x360")
         self.master.resizable(True, False)
     
     def _crear_menu(self) -> None:
@@ -97,18 +97,19 @@ class ClienteGUI:
         """
         menubar = tk.Menu(self.master)
         self.master.config(menu=menubar)
-        
-        # Menú Configuración
-        config_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Configuración", menu=config_menu)
-        config_menu.add_command(label="Servidor...", command=self._mostrar_configuracion_servidor)
-        
+
         # Menú Archivo
         archivo_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Archivo", menu=archivo_menu)
         archivo_menu.add_command(label="Abrir archivo...", command=self._seleccionar_archivo)
         archivo_menu.add_separator()
         archivo_menu.add_command(label="Salir", command=self.master.quit)
+
+        # Menú Configuración
+        config_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Configuración", menu=config_menu)
+        config_menu.add_command(label="Servidor...", command=self._mostrar_configuracion_servidor)
+    
         
         # Menú Ayuda
         help_menu = tk.Menu(menubar, tearoff=0)
