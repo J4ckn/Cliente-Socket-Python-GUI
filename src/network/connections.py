@@ -440,13 +440,30 @@ class ClienteSocket(Conexion):
         
         try:
             datos_bytes = datos.encode('utf-8')
+            tamaño_datos = len(datos_bytes)
+            
+            # Configurar timeout apropiado basado en el tamaño de datos
+            timeout_original = self._socket.gettimeout()
+            if tamaño_datos > 100000:  # > 100KB
+                # Timeout más largo para archivos grandes (1 segundo por cada 100KB)
+                timeout_ajustado = max(30, tamaño_datos // 100000)
+                self._socket.settimeout(timeout_ajustado)
+            
+            # Enviar todos los datos
             self._socket.sendall(datos_bytes)
+            
+            # Restaurar timeout original
+            if timeout_original is not None:
+                self._socket.settimeout(timeout_original)
+                
         except socket.timeout:
-            raise ConexionError("Timeout al enviar datos")
+            raise ConexionError(f"Timeout al enviar datos ({tamaño_datos} bytes)")
         except BrokenPipeError:
-            raise ConexionError("La conexión se cerró inesperadamente")
+            raise ConexionError("La conexión se cerró inesperadamente durante el envío")
+        except ConnectionResetError:
+            raise ConexionError("El servidor cerró la conexión durante el envío")
         except Exception as e:
-            raise ConexionError(f"Error al enviar datos: {e}")
+            raise ConexionError(f"Error al enviar datos ({tamaño_datos} bytes): {e}")
     
     def desconectar(self) -> None:
         """

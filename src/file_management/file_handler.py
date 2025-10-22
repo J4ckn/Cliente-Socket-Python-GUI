@@ -313,9 +313,92 @@ class ManejadorArchivos:
             raise ArchivoError("No hay datos cargados")
         
         try:
-            return self._datos.to_json(orient='records', force_ascii=False)
+            # Crear copia de los datos para procesamiento
+            datos_procesados = self._datos.copy()
+            
+            # Limpiar y preparar datos para el servidor
+            datos_procesados = self._limpiar_datos_para_servidor(datos_procesados)
+            
+            return datos_procesados.to_json(orient='records', force_ascii=False)
         except Exception as e:
             raise ArchivoError(f"Error al convertir datos a JSON: {e}")
+    
+    def _limpiar_datos_para_servidor(self, df):
+        """
+        Limpia y prepara los datos para envío al servidor.
+        
+        Realiza las siguientes operaciones:
+        1. Renombra columnas para coincidir con el servidor
+        2. Filtra filas con datos inválidos
+        3. Convierte tipos de datos apropiados
+        4. Elimina valores nulos problemáticos
+        
+        Args:
+            df (pd.DataFrame): DataFrame original
+            
+        Returns:
+            pd.DataFrame: DataFrame limpio y listo para envío
+        """
+        import pandas as pd
+        
+        # Crear copia para no modificar los datos originales
+        df_limpio = df.copy()
+        
+        # 1. Renombrar columnas para coincidir con el servidor
+        columnas_servidor = {
+            'zona_pais': 'pais',
+            'iso3': 'codigo', 
+            'anio': 'año',
+            'perdida_ha': 'perdida_de_bosques_en_hectareas'
+        }
+        
+        # Solo renombrar columnas que existen
+        renombrar = {k: v for k, v in columnas_servidor.items() if k in df_limpio.columns}
+        df_limpio = df_limpio.rename(columns=renombrar)
+        
+        # 2. Filtrar filas con datos críticos nulos
+        if 'perdida_de_bosques_en_hectareas' in df_limpio.columns:
+            df_limpio = df_limpio.dropna(subset=['perdida_de_bosques_en_hectareas'])
+        
+        if 'año' in df_limpio.columns:
+            df_limpio = df_limpio.dropna(subset=['año'])
+        
+        # 3. Validar y limpiar tipos de datos
+        if 'año' in df_limpio.columns:
+            # Filtrar años válidos (entre 1900 y 2030)
+            df_limpio = df_limpio[
+                (df_limpio['año'] >= 1900) & 
+                (df_limpio['año'] <= 2030)
+            ]
+            df_limpio['año'] = df_limpio['año'].astype(int)
+        
+        if 'perdida_de_bosques_en_hectareas' in df_limpio.columns:
+            # Asegurar que sean números positivos
+            df_limpio = df_limpio[df_limpio['perdida_de_bosques_en_hectareas'] >= 0]
+            df_limpio['perdida_de_bosques_en_hectareas'] = df_limpio['perdida_de_bosques_en_hectareas'].astype(float)
+        
+        # 4. Filtrar filas con datos malformados
+        if 'pais' in df_limpio.columns:
+            # Eliminar filas donde el país es muy corto o contiene solo números
+            df_limpio = df_limpio[
+                (df_limpio['pais'].str.len() >= 2) & 
+                (~df_limpio['pais'].str.isdigit())
+            ]
+        
+        if 'codigo' in df_limpio.columns:
+            # Código de país debe ser 3 caracteres y solo letras
+            df_limpio = df_limpio[
+                (df_limpio['codigo'].str.len() == 3) & 
+                (df_limpio['codigo'].str.isalpha())
+            ]
+        
+        # 5. Eliminar filas duplicadas
+        df_limpio = df_limpio.drop_duplicates()
+        
+        # 6. Resetear índice
+        df_limpio = df_limpio.reset_index(drop=True)
+        
+        return df_limpio
     
     def obtener_informacion_archivo(self) -> Dict[str, Any]:
         """
@@ -356,6 +439,55 @@ class ManejadorArchivos:
             'filas': len(self._datos) if self.tiene_datos else 0,
             'columnas': len(self._datos.columns) if self.tiene_datos else 0
         }
+    
+    def obtener_informacion_datos_procesados(self) -> Dict[str, Any]:
+        """
+        Obtiene información de los datos que se enviarán al servidor.
+        
+        Retorna información sobre los datos después de aplicar limpieza
+        y transformaciones para compatibilidad con el servidor.
+        
+        Returns:
+            Dict[str, Any]: Información de los datos procesados:
+                - filas_originales: Número de filas antes del procesamiento
+                - filas_procesadas: Número de filas después del procesamiento  
+                - filas_eliminadas: Número de filas eliminadas por limpieza
+                - columnas_originales: Nombres de columnas originales
+                - columnas_procesadas: Nombres de columnas para el servidor
+                - tamaño_json: Tamaño del JSON que se enviará (bytes)
+                
+        Example:
+            info = manejador.obtener_informacion_datos_procesados()
+            print(f"De {info['filas_originales']} a {info['filas_procesadas']} filas")
+        """
+        if not self.tiene_datos:
+            return {}
+        
+        try:
+            # Datos originales
+            filas_originales = len(self._datos)
+            columnas_originales = list(self._datos.columns)
+            
+            # Datos procesados
+            datos_procesados = self._limpiar_datos_para_servidor(self._datos)
+            filas_procesadas = len(datos_procesados)
+            columnas_procesadas = list(datos_procesados.columns)
+            
+            # JSON que se enviará
+            json_data = datos_procesados.to_json(orient='records', force_ascii=False)
+            tamaño_json = len(json_data.encode('utf-8'))
+            
+            return {
+                'filas_originales': filas_originales,
+                'filas_procesadas': filas_procesadas,
+                'filas_eliminadas': filas_originales - filas_procesadas,
+                'columnas_originales': columnas_originales,
+                'columnas_procesadas': columnas_procesadas,
+                'tamaño_json': tamaño_json
+            }
+            
+        except Exception:
+            return {}
     
     def _procesar_archivo_espacios(self, archivo_path: Path):
         """
