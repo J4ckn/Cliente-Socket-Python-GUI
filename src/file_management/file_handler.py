@@ -149,7 +149,16 @@ class ManejadorArchivos:
             if archivo_path.suffix.lower() in self.EXTENSIONES_EXCEL:
                 datos = pd.read_excel(archivo_path)
             else:  # CSV o TXT
-                datos = pd.read_csv(archivo_path)
+                # Detectar delimitador automáticamente
+                delimitador = self._detectar_delimitador(archivo_path)
+                
+                # Manejo especial para archivos delimitados por espacios
+                if delimitador == ' ':
+                    # Para espacios, usar delim_whitespace=True que maneja múltiples espacios
+                    datos = pd.read_csv(archivo_path, delim_whitespace=True)
+                else:
+                    # Para otros delimitadores, usar el delimitador detectado
+                    datos = pd.read_csv(archivo_path, delimiter=delimitador)
             
             # Validar que el archivo no esté vacío
             if datos.empty:
@@ -167,6 +176,109 @@ class ManejadorArchivos:
             raise ArchivoError(f"Error al parsear el archivo: {e}")
         except Exception as e:
             raise ArchivoError(f"Error inesperado al cargar el archivo: {e}")
+        
+    def _detectar_delimitador(self, archivo_path: Path) -> str:
+        """
+        Detecta automáticamente el delimitador de un archivo CSV/TXT.
+
+        Lee las primeras líneas del archivo y analiza qué delimitador
+        es más probable que esté siendo usado (coma, tabulación, punto y coma, espacios).
+
+        Args:
+            archivo_path (Path): Ruta al archivo a analizar
+
+        Returns:
+            str: El delimitador detectado (',', '\t', ';', ' ')
+
+        Raises:
+            ArchivoError: Si no se puede detectar un delimitador válido
+
+        Note:
+            Analiza los delimitadores más comunes en orden de preferencia:
+            1. Coma (,) - CSV estándar
+            2. Tabulación (\t) - TSV
+            3. Punto y coma (;) - CSV europeo
+            4. Espacios ( ) - Archivos delimitados por espacios
+        """
+        import csv
+        import re
+
+        try:
+            # Leer una muestra del archivo para detectar el delimitador
+            with open(archivo_path, 'r', encoding='utf-8', errors='ignore') as archivo:
+                muestra = archivo.read(2048)  # Leer más caracteres para mejor detección
+
+            # Usar el Sniffer de CSV para detectar el delimitador (excluyendo espacios)
+            sniffer = csv.Sniffer()
+            delimitadores_csv = [',', '\t', ';']
+            delimitadores_todos = [',', '\t', ';', ' ']
+
+            try:
+                # Intentar detectar automáticamente con csv.Sniffer
+                dialecto = sniffer.sniff(muestra, delimiters=',\t;')
+                return dialecto.delimiter
+            except csv.Error:
+                # Si falla la detección automática, analizar manualmente
+                lineas_muestra = [linea.strip() for linea in muestra.split('\n')[:10] if linea.strip()]
+                
+                if not lineas_muestra:
+                    return ','  # Valor por defecto
+                
+                mejores_resultados = []
+                
+                for delimitador in delimitadores_todos:
+                    try:
+                        # Análisis especial para espacios (múltiples espacios = un delimitador)
+                        if delimitador == ' ':
+                            columnas_por_linea = []
+                            for linea in lineas_muestra:
+                                # Reemplazar múltiples espacios por uno solo y luego dividir
+                                linea_limpia = re.sub(r'\s+', ' ', linea.strip())
+                                if linea_limpia:
+                                    columnas = len(linea_limpia.split(' '))
+                                    columnas_por_linea.append(columnas)
+                        else:
+                            # Análisis normal para otros delimitadores
+                            columnas_por_linea = []
+                            for linea in lineas_muestra:
+                                if linea:
+                                    columnas = len(linea.split(delimitador))
+                                    columnas_por_linea.append(columnas)
+                        
+                        if columnas_por_linea:
+                            # Calcular consistencia: todas las líneas deben tener el mismo número de columnas
+                            columnas_unicas = set(columnas_por_linea)
+                            consistencia = len(columnas_por_linea) / len(columnas_unicas) if columnas_unicas else 0
+                            promedio_columnas = sum(columnas_por_linea) / len(columnas_por_linea)
+                            
+                            # Filtrar resultados con al menos 2 columnas y buena consistencia
+                            if promedio_columnas >= 2:
+                                mejores_resultados.append({
+                                    'delimitador': delimitador,
+                                    'consistencia': consistencia,
+                                    'promedio_columnas': promedio_columnas,
+                                    'columnas_por_linea': columnas_por_linea
+                                })
+                    
+                    except Exception:
+                        continue
+                
+                # Seleccionar el mejor delimitador basado en consistencia y número de columnas
+                if mejores_resultados:
+                    # Ordenar por consistencia (descendente) y luego por promedio de columnas (descendente)
+                    mejor = max(mejores_resultados, 
+                              key=lambda x: (x['consistencia'], x['promedio_columnas']))
+                    
+                    # Verificar que la consistencia sea razonable (al menos 80% de las líneas iguales)
+                    if mejor['consistencia'] >= 0.8:
+                        return mejor['delimitador']
+                
+                # Si no se encontró un delimitador consistente, usar coma por defecto
+                return ','
+
+        except Exception as e:
+            # Si todo falla, usar coma por defecto
+            return ','
     
     def obtener_datos_json(self) -> str:
         """
