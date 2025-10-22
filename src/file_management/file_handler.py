@@ -154,8 +154,8 @@ class ManejadorArchivos:
                 
                 # Manejo especial para archivos delimitados por espacios
                 if delimitador == ' ':
-                    # Para espacios, usar delim_whitespace=True que maneja múltiples espacios
-                    datos = pd.read_csv(archivo_path, delim_whitespace=True)
+                    # Para archivos delimitados por espacios, intentar diferentes estrategias
+                    datos = self._procesar_archivo_espacios(archivo_path)
                 else:
                     # Para otros delimitadores, usar el delimitador detectado
                     datos = pd.read_csv(archivo_path, delimiter=delimitador)
@@ -173,6 +173,7 @@ class ManejadorArchivos:
         except pd.errors.EmptyDataError:
             raise ArchivoError("El archivo está vacío o corrupto")
         except pd.errors.ParserError as e:
+            print(f"Error al parsear el archivo: {e}")
             raise ArchivoError(f"Error al parsear el archivo: {e}")
         except Exception as e:
             raise ArchivoError(f"Error inesperado al cargar el archivo: {e}")
@@ -355,3 +356,126 @@ class ManejadorArchivos:
             'filas': len(self._datos) if self.tiene_datos else 0,
             'columnas': len(self._datos.columns) if self.tiene_datos else 0
         }
+    
+    def _procesar_archivo_espacios(self, archivo_path: Path):
+        """
+        Procesa archivos delimitados por espacios con manejo inteligente.
+        
+        Maneja casos complejos donde los datos pueden contener espacios internos
+        pero están separados por múltiples espacios entre columnas.
+        
+        Args:
+            archivo_path (Path): Ruta al archivo a procesar
+            
+        Returns:
+            pd.DataFrame: DataFrame con los datos procesados
+            
+        Raises:
+            ArchivoError: Si no se puede procesar el archivo
+        """
+        try:
+            # Leer el archivo línea por línea para análisis manual
+            with open(archivo_path, 'r', encoding='utf-8', errors='ignore') as archivo:
+                lineas = archivo.readlines()
+            
+            if not lineas:
+                raise ArchivoError("El archivo está vacío")
+            
+            # Estrategia principal: Procesamiento manual inteligente
+            datos_procesados = []
+            encabezados = None
+            
+            for i, linea in enumerate(lineas):
+                linea = linea.strip()
+                if not linea:
+                    continue
+                
+                # Dividir por espacios
+                partes = linea.split()
+                
+                if i == 0:  # Línea de encabezado
+                    encabezados = partes
+                    continue
+                
+                # Para líneas de datos, esperamos 4 columnas: pais, codigo, año, perdida
+                if len(partes) >= 4:
+                    if len(partes) == 4:
+                        # Caso normal: exactamente 4 campos
+                        datos_procesados.append(partes)
+                    else:
+                        # Caso con espacios en nombre de país: unir primeros campos
+                        # Las últimas 3 partes son: codigo, año, perdida
+                        pais = ' '.join(partes[:-3])
+                        codigo = partes[-3]
+                        anio = partes[-2]
+                        perdida = partes[-1]
+                        datos_procesados.append([pais, codigo, anio, perdida])
+                elif len(partes) >= 3:
+                    # Caso con menos campos (posible error de formato)
+                    # Intentar procesar de cualquier manera
+                    while len(partes) < 4:
+                        partes.append('')  # Rellenar campos faltantes
+                    datos_procesados.append(partes[:4])
+            
+            if encabezados and datos_procesados:
+                df = pd.DataFrame(datos_procesados, columns=encabezados)
+                
+                # Convertir tipos de datos apropiados
+                try:
+                    if 'anio' in df.columns:
+                        df['anio'] = pd.to_numeric(df['anio'], errors='coerce')
+                    if 'perdida_ha' in df.columns:
+                        df['perdida_ha'] = pd.to_numeric(df['perdida_ha'], errors='coerce')
+                except Exception:
+                    pass  # Si falla la conversión, mantener como string
+                
+                return df
+            
+            # Si falla el procesamiento manual, intentar estrategia básica
+            return pd.read_csv(archivo_path, sep=r'\s+', engine='python')
+            
+        except Exception as e:
+            raise ArchivoError(f"Error al procesar archivo con espacios: {e}")
+    
+    def _procesar_columnas_fijas(self, archivo_path: Path, lineas: list):
+        """
+        Procesa archivo usando posiciones fijas de columnas.
+        
+        Args:
+            archivo_path (Path): Ruta al archivo
+            lineas (list): Líneas del archivo
+            
+        Returns:
+            pd.DataFrame: DataFrame procesado
+        """
+        # Analizar la primera línea de datos para determinar posiciones
+        if len(lineas) < 2:
+            raise ArchivoError("Archivo no tiene suficientes datos")
+        
+        linea_encabezado = lineas[0].rstrip('\n\r')
+        linea_datos = lineas[1].rstrip('\n\r')
+        
+        # Detectar posiciones de las columnas basándose en espacios múltiples
+        import re
+        
+        # Encontrar grupos de espacios múltiples (2 o más espacios)
+        posiciones_separadores = []
+        for match in re.finditer(r'  +', linea_datos):
+            posiciones_separadores.append((match.start(), match.end()))
+        
+        if len(posiciones_separadores) >= 2:  # Al menos 3 columnas
+            # Definir anchos de columnas basándose en los separadores
+            anchos = []
+            inicio = 0
+            
+            for inicio_sep, fin_sep in posiciones_separadores:
+                anchos.append(inicio_sep - inicio)
+                inicio = fin_sep
+            
+            # Última columna
+            anchos.append(len(linea_datos) - inicio)
+            
+            # Usar read_fwf (fixed width format)
+            return pd.read_fwf(archivo_path, widths=anchos, header=0)
+        
+        raise ArchivoError("No se pudo determinar estructura de columnas")
