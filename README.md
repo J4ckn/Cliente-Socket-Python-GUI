@@ -148,11 +148,6 @@ pip install pandas
 python main.py
 ```
 
-4. (Opcional) Prueba todos los módulos:
-```bash
-python test_modules.py
-```
-
 ## Uso del Cliente
 
 1. **Iniciar la Aplicación**: Ejecuta `python main.py` para abrir la interfaz gráfica
