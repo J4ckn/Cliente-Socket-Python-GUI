@@ -1,0 +1,20 @@
+# Dependencias del proyecto Cliente-Socket-Python-GUI
+
+# Procesamiento de datos
+pandas>=2.2.0
+
+# Lectura de archivos Excel
+openpyxl>=3.1.0
+
+# Interfaz gráfica (incluida en Python estándar, pero listada por compatibilidad)
+# tkinter viene preinstalado con Python en la mayoría de las distribuciones
+
+# Librerías estándar de Python (no requieren instalación):
+# - socket
+# - configparser
+# - pathlib
+# - typing
+# - abc
+# - webbrowser
+# - os
+# - sys

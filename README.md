@@ -127,7 +127,7 @@ Cliente-Socket-Python-GUI/
 ### Instalación de Dependencias
 
 ```bash
-pip install pandas
+pip install -r requirements.txt
 ```
 
 ### Ejecución del Cliente
@@ -140,7 +140,7 @@ cd Cliente-Socket-Python-GUI
 
 2. Instala las dependencias:
 ```bash
-pip install pandas
+pip install -r requirements.txt
 ```
 
 3. Ejecuta la aplicación:
