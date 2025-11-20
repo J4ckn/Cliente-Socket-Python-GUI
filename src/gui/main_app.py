@@ -84,7 +84,7 @@ class ClienteGUI:
         Establece título, tamaño y comportamiento de redimensionado
         de la ventana principal de la aplicación.
         """
-        self.master.title("Cliente de Envío de Datos")
+        self.master.title("Cliente3")
         self.master.geometry("450x360")
         self.master.resizable(True, False)
     
