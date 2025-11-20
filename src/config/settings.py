@@ -69,7 +69,7 @@ class ConfiguracionCliente:
         self._archivo_config = archivo_config
         self._config = configparser.ConfigParser()
         self._ip_servidor = "127.0.0.1"  # Localhost por defecto
-        self._puerto_servidor = 65432     # Puerto no privilegiado por defecto
+        self._puerto_servidor = 6003     # Puerto no privilegiado por defecto
         self.cargar_configuracion()
     
     @property
