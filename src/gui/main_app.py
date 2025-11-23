@@ -85,7 +85,7 @@ class ClienteGUI:
         de la ventana principal de la aplicación.
         """
         self.master.title("Cliente3")
-        self.master.geometry("450x360")
+        self.master.geometry("800x500")
         self.master.resizable(True, False)
     
     def _crear_menu(self) -> None:
